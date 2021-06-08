@@ -8,6 +8,10 @@ function add_dual_vars_in_dual_cones(
     dual_obj_affine_terms = Dict{VI,T}()
     for (F, S) in con_types
         for ci in MOI.get(primal_model, MOI.ListOfConstraintIndices{F,S}()) # Constraints of type {F, S}
+            # If `F` not one of these two, we can skip the `in` check.
+            if (F === MOI.VectorOfVariables || F === MOI.SingleVariable) && haskey(primal_dual_map.constrained_var_dual, ci)
+                continue
+            end
             # Add dual variable to dual cone
             # Fill a dual objective dictionary
             # Fill the primal_con_dual_var dictionary
