@@ -42,15 +42,33 @@ function add_dual_vars_in_dual_cones(
 ) where {T}
     dual_obj_affine_terms = Dict{VI,T}()
     for (F, S) in con_types
-        add_dual_vars_in_dual_cones(
-            dual_obj_affine_terms,
-            dual_model,
-            primal_model,
-            primal_dual_map,
-            dual_names,
-            F,
-            S,
-        )
+        for ci in MOI.get(primal_model, MOI.ListOfConstraintIndices{F,S}()) # Constraints of type {F, S}
+            # If `F` not one of these two, we can skip the `in` check.
+            if (F === MOI.VectorOfVariables || F === MOI.SingleVariable) && haskey(primal_dual_map.constrained_var_dual, ci)
+                continue
+            end
+            # Add dual variable to dual cone
+            # Fill a dual objective dictionary
+            # Fill the primal_con_dual_var dictionary
+            ci_dual = add_dual_variable(
+                dual_model,
+                primal_model,
+                dual_names,
+                primal_dual_map.primal_con_dual_var,
+                dual_obj_affine_terms,
+                ci,
+            )
+            push_to_primal_con_dual_con!(
+                primal_dual_map.primal_con_dual_con,
+                ci,
+                ci_dual,
+            )
+            push_to_primal_con_constants!(
+                primal_model,
+                primal_dual_map.primal_con_constants,
+                ci,
+            )
+        end
     end
     return dual_obj_affine_terms
 end
